@@ -3,6 +3,10 @@ package com.javacode.Service;
 import com.javacode.Model.User;
 import com.javacode.DAO.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PostFilter;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,7 +15,7 @@ import java.util.List;
 
 @Service
 @Transactional
-public class UserServiceImp implements UserService {
+public class UserServiceImp implements UserService, UserDetailsService {
 
     @Autowired
     private UserDAO userDAO;
@@ -48,5 +52,15 @@ public class UserServiceImp implements UserService {
     @Override
     public User getUserByName(String name) {
         return userDAO.getUserByName(name);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String s) {
+        User userByName = getUserByName(s);
+        if (userByName == null) {
+            throw new UsernameNotFoundException("User not found " + s);
+        }
+        return userByName;
     }
 }

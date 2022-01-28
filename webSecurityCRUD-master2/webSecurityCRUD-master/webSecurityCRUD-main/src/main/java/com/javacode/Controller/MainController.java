@@ -6,6 +6,7 @@ import com.javacode.Model.User;
 import com.javacode.Service.RoleService;
 import com.javacode.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 
 @Controller
+@RequestMapping(name = "/")
 public class MainController {
 
     @Autowired
@@ -39,6 +42,7 @@ public class MainController {
         return "adminPage";
     }
 
+
     @GetMapping(value = "admin/user/{id}")
     String showUserById(@PathVariable(name = "id") long id, Model model) {
         User user = userService.getById(id);
@@ -48,14 +52,6 @@ public class MainController {
         return "showUserById";
 
     }
-
-    @GetMapping("/user")
-    public String infoUser(@AuthenticationPrincipal User user, ModelMap model) {
-        model.addAttribute("user", user);
-        model.addAttribute("roles", user.getRoles());
-        return "userPage";
-    }
-
 
     @GetMapping(value = "admin/new")
     public String newUser(ModelMap model) {
@@ -67,12 +63,12 @@ public class MainController {
 
     @PostMapping(value = "/admin/new")
     public String newUser(@ModelAttribute User user,
-                          @RequestParam(value = "roless", required = false, defaultValue = "ROLE_USER") String[] role) {
-        Set<Role> rolesSet = new HashSet<>();
-        for (String roles : role) {
-            rolesSet.add(roleService.getRoleByName(roles));
-            user.setRoles(rolesSet);
-        }
+                          @RequestParam(value = "roless",
+                                  required = false,
+                                  defaultValue = "ROLE_USER") Set<String> roles) {
+        Set<Role> setRoles = roleService.getSetRoles(roles);
+        user.setRoles(setRoles);
+
         user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
         userService.save(user);
         return "redirect:/admin";
@@ -88,14 +84,18 @@ public class MainController {
 
 
     @PostMapping(value = "/admin/edit/{id}")
-    public String editUser(@ModelAttribute User user, @RequestParam(value = "roless", required = false, defaultValue = "ROLE_USER") String[] role) {
-        Set<Role> rolesSet = new HashSet<>();
+    public String editUser(@ModelAttribute User user,
+                           @RequestParam(value = "roless",
+                                   required = false,
+                                   defaultValue = "ROLE_USER") Set<String> roles) {
 
-        for (String roles : role) {
-            rolesSet.add((roleService.getRoleByName(roles)));
-            user.setRoles(rolesSet);
+        Set<Role> setRoles = roleService.getSetRoles(roles);
+        user.setRoles(setRoles);
+
+        if (!user.getPassword().equals(userService.getById(user.getId()).getPassword())) {
+            user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
         }
-        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+
         userService.edit(user);
 
         return "redirect:/admin";

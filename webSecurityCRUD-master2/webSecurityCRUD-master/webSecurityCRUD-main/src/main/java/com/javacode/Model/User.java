@@ -1,5 +1,7 @@
 package com.javacode.Model;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -17,25 +19,23 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
    @Column(name = "user_id")
     private long id;
-    @Column(name = "user_name")
+    @Column(name = "user_name",unique = true)
     private String username;
     @Column(name = "age")
     private int age;
-    @Column(name = "email")
+    @Column(name = "email",unique = true)
     private String email;
     @Column(name = "password")
     private String password;
 
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @Fetch(FetchMode.JOIN)
     @JoinTable(
             name = "users_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
-
-    public User() {
-    }
 
     public User(long id, String username, int age, String email, String password, Set<Role> roles) {
         this.id = id;
@@ -44,6 +44,10 @@ public class User implements UserDetails {
         this.email = email;
         this.password = password;
         this.roles = roles;
+    }
+
+    public User() {
+
     }
 
     @Override
